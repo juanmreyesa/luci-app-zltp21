@@ -172,6 +172,9 @@ set_raw() {
 case "$1" in
 	call)
 		read -r input
+		# One modem session at a time: a second LOGIN invalidates the first one's cookie.
+		exec 9>/var/lock/luci.zltp21.lock
+		flock 9
 		load_config || { rpc_error 'Invalid ZLT P21 configuration'; exit 0; }
 		case "$2" in
 			status) status ;;

@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=LuCI support for ZLT P21 LTE CPEs
-LUCI_DEPENDS:=+curl +ucode
+LUCI_DEPENDS:=+curl +ucode +ucode-mod-fs
 LUCI_PKGARCH:=all
 
 PKG_LICENSE:=MIT
