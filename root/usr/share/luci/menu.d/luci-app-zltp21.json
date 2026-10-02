@@ -1,0 +1,36 @@
+{
+  "admin/status/zltp21": {
+    "title": "ZLT P21",
+    "order": 45,
+    "action": {
+      "type": "firstchild"
+    },
+    "depends": {
+      "acl": [ "luci-app-zltp21" ]
+    }
+  },
+  "admin/status/zltp21/overview": {
+    "title": "Overview",
+    "order": 1,
+    "action": {
+      "type": "view",
+      "path": "zltp21/overview"
+    }
+  },
+  "admin/status/zltp21/sms": {
+    "title": "SMS",
+    "order": 2,
+    "action": {
+      "type": "view",
+      "path": "zltp21/sms"
+    }
+  },
+  "admin/status/zltp21/settings": {
+    "title": "Settings",
+    "order": 3,
+    "action": {
+      "type": "view",
+      "path": "zltp21/settings"
+    }
+  }
+}

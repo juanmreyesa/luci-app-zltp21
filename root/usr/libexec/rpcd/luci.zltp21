@@ -1,0 +1,143 @@
+#!/bin/sh
+
+if [ "$1" = list ]; then
+	echo '{"status":{},"sms_list":{},"sms_send":{"number":3,"message_hex":3},"sms_delete":{"id":3}}'
+	exit 0
+fi
+
+. /usr/share/libubox/jshn.sh
+
+rpc_error() {
+	json_init
+	json_add_string error "$1"
+	json_dump
+}
+
+config_get() {
+	uci -q get "zltp21.main.$1"
+}
+
+load_config() {
+	scheme="$(config_get scheme)"
+	host="$(config_get host)"
+	username="$(config_get username)"
+	password="$(config_get password)"
+	timeout="$(config_get timeout)"
+
+	[ "$scheme" = http ] || [ "$scheme" = https ] || return 1
+	case "$host" in
+		''|*[!A-Za-z0-9.-]*|.*|*.) return 1 ;;
+	esac
+	case "$timeout" in ''|*[!0-9]*) timeout=15 ;; esac
+	[ "$timeout" -ge 1 ] 2>/dev/null || timeout=15
+	[ "$timeout" -le 60 ] 2>/dev/null || timeout=60
+	username="${username:-admin}"
+	base="$scheme://$host"
+	referer="$base/index.html"
+	cookie="$(mktemp /tmp/zltp21.XXXXXX)" || return 1
+	trap 'rm -f "$cookie"' EXIT INT TERM
+}
+
+post() {
+	curl --fail --silent --show-error --noproxy '*' \
+		--connect-timeout "$timeout" --max-time "$timeout" \
+		--header "Referer: $referer" --cookie "$cookie" --cookie-jar "$cookie" \
+		--data-urlencode 'isTest=false' "$@" \
+		"$base/goform/goform_set_cmd_process" 2>/dev/null
+}
+
+login() {
+	[ -n "$password" ] || return 2
+	user64="$(printf %s "$username" | ucode -e 'import * as fs from "fs"; print(b64enc(fs.readfile("/dev/stdin")))')"
+	pass64="$(printf %s "$password" | ucode -e 'import * as fs from "fs"; print(b64enc(fs.readfile("/dev/stdin")))')"
+	post --data-urlencode 'goformId=LOGIN' \
+		--data-urlencode "username=$user64" \
+		--data-urlencode "password=$pass64" >/dev/null
+}
+
+get_cmd() {
+	curl --fail --silent --show-error --noproxy '*' \
+		--connect-timeout "$timeout" --max-time "$timeout" \
+		--header "Referer: $referer" --cookie "$cookie" --cookie-jar "$cookie" \
+		--get --data-urlencode 'isTest=false' "$@" \
+		"$base/goform/goform_get_cmd_process" 2>/dev/null
+}
+
+json_reply() {
+	reply="$(jsonfilter -s "$1" -e '@' 2>/dev/null)"
+	[ -n "$reply" ] && printf '%s\n' "$reply" || rpc_error 'Invalid response from modem'
+}
+
+status() {
+	body="$(get_cmd --data-urlencode 'multi_data=1' --data-urlencode \
+		'cmd=modem_main_state,network_type,network_provider,ppp_status,rssi,lte_rsrp,lte_rsrq,lte_snr,sinr,signalbar,cell_id,pci,lac_code,lte_band,wan_ipaddr,realtime_tx_bytes,realtime_rx_bytes,monthly_tx_bytes,monthly_rx_bytes,sms_unread_num,imei,sim_imsi')" || {
+		rpc_error 'Unable to reach modem'
+		return
+	}
+	json_reply "$body"
+}
+
+sms_list() {
+	login || {
+		[ $? -eq 2 ] && rpc_error 'Configure the modem password first' || rpc_error 'Modem login failed'
+		return
+	}
+	body="$(get_cmd --data-urlencode 'cmd=sms_data_total' \
+		--data-urlencode 'page=0' --data-urlencode 'data_per_page=50' \
+		--data-urlencode 'mem_store=1' --data-urlencode 'tags=10' \
+		--data-urlencode 'order_by=order by id desc')" || {
+		rpc_error 'Unable to read messages'
+		return
+	}
+	json_reply "$body"
+}
+
+sms_send() {
+	json_load "$1"
+	json_get_var number number
+	json_get_var message_hex message_hex
+	case "$number" in ''|*[!+0-9]*) rpc_error 'Invalid phone number'; return ;; esac
+	case "$message_hex" in ''|*[!0-9A-Fa-f]*) rpc_error 'Invalid message'; return ;; esac
+	[ $(( ${#message_hex} % 4 )) -eq 0 ] && [ "${#message_hex}" -le 280 ] || {
+		rpc_error 'Message must contain at most 70 Unicode characters'
+		return
+	}
+	login || { rpc_error 'Modem login failed'; return; }
+	offset="$(date +%z)"
+	sms_time="$(date '+%y;%m;%d;%H;%M;%S');${offset%??}"
+	body="$(post --data-urlencode 'goformId=SEND_SMS' --data-urlencode 'notCallback=true' \
+		--data-urlencode "Number=$number" --data-urlencode "sms_time=$sms_time" \
+		--data-urlencode "MessageBody=$message_hex" --data-urlencode 'ID=-1' \
+		--data-urlencode 'encode_type=UNICODE')" || {
+		rpc_error 'Unable to send message'
+		return
+	}
+	json_reply "$body"
+}
+
+sms_delete() {
+	json_load "$1"
+	json_get_var id id
+	case "$id" in ''|*[!0-9]*) rpc_error 'Invalid message ID'; return ;; esac
+	login || { rpc_error 'Modem login failed'; return; }
+	body="$(post --data-urlencode 'goformId=DELETE_SMS' \
+		--data-urlencode "msg_id=$id;" --data-urlencode 'notCallback=true')" || {
+		rpc_error 'Unable to delete message'
+		return
+	}
+	json_reply "$body"
+}
+
+case "$1" in
+	call)
+		read -r input
+		load_config || { rpc_error 'Invalid ZLT P21 configuration'; exit 0; }
+		case "$2" in
+			status) status ;;
+			sms_list) sms_list ;;
+			sms_send) sms_send "$input" ;;
+			sms_delete) sms_delete "$input" ;;
+			*) rpc_error 'Unknown method' ;;
+		esac
+		;;
+esac

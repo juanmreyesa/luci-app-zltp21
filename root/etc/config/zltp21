@@ -1,0 +1,6 @@
+config zltp21 'main'
+	option scheme 'http'
+	option host '192.168.1.1'
+	option username 'admin'
+	option password ''
+	option timeout '15'
