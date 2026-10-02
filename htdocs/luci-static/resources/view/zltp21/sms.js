@@ -36,6 +36,12 @@ return view.extend({
 				E('td', { 'class': 'td' }, [ zltp21.formatDate(message.date || message.time) ]),
 				E('td', { 'class': 'td' }, [ zltp21.decodeUcs2(message.content || message.message) ]),
 				E('td', { 'class': 'td cbi-section-actions' }, [
+					message.tag == '1' ? E('button', {
+						'class': 'btn cbi-button-action',
+						'type': 'button',
+						'click': ui.createHandlerFn(this, 'handleRead', id)
+					}, [ _('Mark read') ]) : '',
+					' ',
 					E('button', {
 						'class': 'btn cbi-button-negative',
 						'type': 'button',
@@ -50,6 +56,10 @@ return view.extend({
 		return listMessages().then(L.bind(function(data) {
 			dom.content(document.getElementById('zltp21-messages'), this.messageTable(data));
 		}, this));
+	},
+
+	handleRead: function(id) {
+		return zltp21.run('SET_MSG_READ', { msg_id: id + ';', tag: '0' }).then(L.bind(this.refresh, this));
 	},
 
 	handleDelete: function(id) {

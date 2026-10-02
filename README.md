@@ -4,12 +4,17 @@ LuCI integration for ZLT/Tozed P21-style LTE routers using the stock `goform` we
 
 ## Features
 
-- Live operator, connection, cell, LTE band and signal status
-- Current and monthly traffic counters
-- SMS inbox, send and delete
-- Modem address and credentials stored locally in UCI
+- **Overview** – operator, connection, cell, LTE band, signal and traffic, live
+- **SMS** – inbox, send, delete, mark read
+- **USSD** – send codes, reply, end session
+- **Network** – connect/disconnect, preferred network mode, LTE band lock, operator lock state
+- **Wi-Fi** – SSID, hidden, security, password, max clients, isolation
+- **Firewall** – port forwarding and mapping rules, DMZ, UPnP, NAT
+- **Remote access** – Dynamic DNS, WAN web login, remote management, WAN ping, TR-069 client
+- **System** – device info, reboot, change admin password, factory reset
+- **Settings** – modem address and credentials stored in UCI
 
-The browser never connects to the modem directly; the modem password lives in UCI and is only readable by LuCI users with the `luci-app-zltp21` ACL. A small rpcd backend performs the four allowed operations from the OpenWrt router.
+The browser never connects to the modem directly; the modem password lives in UCI and is only readable by LuCI users with the `luci-app-zltp21` ACL. A small rpcd backend talks to the modem from the OpenWrt router. Its generic `set` method only accepts an allowlist of goform actions (`GOFORM_ALLOW`); operator unlock and NV writes are deliberately left out.
 
 ## Install from source
 
@@ -35,7 +40,7 @@ Built for ZLT/Tozed firmware exposing:
 
 - `GET /goform/goform_get_cmd_process`
 - `POST /goform/goform_set_cmd_process`
-- `LOGIN`, `SEND_SMS`, and `DELETE_SMS` goform actions
+- `LOGIN`, `SEND_SMS`, `DELETE_SMS` and the goform actions listed in `GOFORM_ALLOW`
 
 Firmware variants may use different field names. Status is read without a modem login where supported; SMS requires the password configured in UCI.
 

@@ -6,7 +6,9 @@
       "type": "firstchild"
     },
     "depends": {
-      "acl": [ "luci-app-zltp21" ]
+      "acl": [
+        "luci-app-zltp21"
+      ]
     }
   },
   "admin/status/zltp21/overview": {
@@ -25,9 +27,57 @@
       "path": "zltp21/sms"
     }
   },
+  "admin/status/zltp21/ussd": {
+    "title": "USSD",
+    "order": 3,
+    "action": {
+      "type": "view",
+      "path": "zltp21/ussd"
+    }
+  },
+  "admin/status/zltp21/network": {
+    "title": "Network",
+    "order": 4,
+    "action": {
+      "type": "view",
+      "path": "zltp21/network"
+    }
+  },
+  "admin/status/zltp21/wifi": {
+    "title": "Wi-Fi",
+    "order": 5,
+    "action": {
+      "type": "view",
+      "path": "zltp21/wifi"
+    }
+  },
+  "admin/status/zltp21/firewall": {
+    "title": "Firewall",
+    "order": 6,
+    "action": {
+      "type": "view",
+      "path": "zltp21/firewall"
+    }
+  },
+  "admin/status/zltp21/remote": {
+    "title": "Remote access",
+    "order": 7,
+    "action": {
+      "type": "view",
+      "path": "zltp21/remote"
+    }
+  },
+  "admin/status/zltp21/system": {
+    "title": "System",
+    "order": 8,
+    "action": {
+      "type": "view",
+      "path": "zltp21/system"
+    }
+  },
   "admin/status/zltp21/settings": {
     "title": "Settings",
-    "order": 3,
+    "order": 9,
     "action": {
       "type": "view",
       "path": "zltp21/settings"

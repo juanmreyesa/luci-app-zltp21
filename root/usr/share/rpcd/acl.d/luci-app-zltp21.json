@@ -3,13 +3,13 @@
     "description": "Grant access to ZLT P21 status and SMS",
     "read": {
       "ubus": {
-        "luci.zltp21": [ "status", "sms_list" ]
+        "luci.zltp21": [ "status", "sms_list", "get" ]
       },
       "uci": [ "zltp21" ]
     },
     "write": {
       "ubus": {
-        "luci.zltp21": [ "sms_send", "sms_delete" ]
+        "luci.zltp21": [ "sms_send", "sms_delete", "set" ]
       },
       "uci": [ "zltp21" ]
     }
