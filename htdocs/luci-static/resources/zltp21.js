@@ -1,4 +1,5 @@
 'use strict';
+'require baseclass';
 
 function encodeUcs2(value) {
 	var output = '';
@@ -50,10 +51,10 @@ function bandLabel(value) {
 	return value ? 'B%s'.format(value) : '-';
 }
 
-return {
+return baseclass.extend({
 	encodeUcs2: encodeUcs2,
 	decodeUcs2: decodeUcs2,
 	formatBytes: formatBytes,
 	formatDate: formatDate,
 	bandLabel: bandLabel
-};
+});
